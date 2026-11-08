@@ -21,7 +21,19 @@
     header h1 { margin: 0; font-size: 2.2rem; letter-spacing: 1px; color: #fbbf24; }
     header p { margin: .5rem 0 0; color: #a8a29e; font-style: italic; }
     main { max-width: 1000px; margin: 1.5rem auto; padding: 0 2rem 3rem; }
-    #contador { color: #a8a29e; margin-bottom: 1rem; font-size: .95rem; }
+    #campo-busqueda {
+      width: 100%;
+      padding: .9rem 1.1rem;
+      font-size: 1rem;
+      font-family: inherit;
+      background: #292524;
+      color: #e7e5e4;
+      border: 2px solid #44403c;
+      border-radius: 4px;
+    }
+    #campo-busqueda::placeholder { color: #78716c; }
+    #campo-busqueda:focus { outline: none; border-color: #f59e0b; }
+    #contador { color: #a8a29e; margin: 1rem 0; font-size: .95rem; }
     table { width: 100%; border-collapse: collapse; }
     thead th {
       text-align: left;
@@ -49,6 +61,12 @@
   </header>
 
   <main>
+    <input
+      type="text"
+      id="campo-busqueda"
+      placeholder="Buscar por título o autor..."
+      autocomplete="off"
+    >
     <div id="contador"></div>
     <p id="mensaje">Cargando libros...</p>
     <table id="tabla-libros" hidden>
@@ -78,9 +96,21 @@
     const tablaLibros = document.getElementById('tabla-libros');
     const listaLibros = document.getElementById('lista-libros');
     const contador = document.getElementById('contador');
+    const campoBusqueda = document.getElementById('campo-busqueda');
+
+    let todosLosLibros = []; // registros completos traídos de Supabase
 
     function pintarLibros(libros) {
       listaLibros.innerHTML = '';
+
+      if (libros.length === 0) {
+        contador.textContent = '0 resultados';
+        mensaje.textContent = 'No se encontraron libros con esa búsqueda.';
+        mensaje.classList.remove('error');
+        mensaje.hidden = false;
+        tablaLibros.hidden = true;
+        return;
+      }
 
       libros.forEach(libro => {
         const fila = document.createElement('tr');
@@ -103,10 +133,22 @@
         listaLibros.appendChild(fila);
       });
 
-      contador.textContent = libros.length + ' libros en el catálogo';
+      contador.textContent = libros.length + ' de ' + todosLosLibros.length + ' libros';
       mensaje.hidden = true;
       tablaLibros.hidden = false;
     }
+
+    // Filtro en vivo por título o autor
+    campoBusqueda.addEventListener('input', () => {
+      const termino = campoBusqueda.value.trim().toLowerCase();
+
+      const resultado = todosLosLibros.filter(libro =>
+        libro.titulo.toLowerCase().includes(termino) ||
+        libro.autor.toLowerCase().includes(termino)
+      );
+
+      pintarLibros(resultado);
+    });
 
     async function obtenerLibros() {
       const { data, error } = await cliente
@@ -120,7 +162,8 @@
         return;
       }
 
-      pintarLibros(data);
+      todosLosLibros = data;
+      pintarLibros(todosLosLibros);
     }
 
     obtenerLibros();
