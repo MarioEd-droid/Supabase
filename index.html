@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Biblioteca</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: #1c1917;
+      color: #e7e5e4;
+    }
+    header {
+      padding: 2.5rem 2rem 1.5rem;
+      max-width: 1000px;
+      margin: 0 auto;
+      border-bottom: 2px solid #f59e0b;
+    }
+    header h1 { margin: 0; font-size: 2.2rem; letter-spacing: 1px; color: #fbbf24; }
+    header p { margin: .5rem 0 0; color: #a8a29e; font-style: italic; }
+    main { max-width: 1000px; margin: 1.5rem auto; padding: 0 2rem 3rem; }
+    #contador { color: #a8a29e; margin-bottom: 1rem; font-size: .95rem; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left;
+      padding: .9rem 1rem;
+      color: #1c1917;
+      background: #f59e0b;
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: .8rem;
+      letter-spacing: 1px;
+    }
+    tbody td { padding: .85rem 1rem; border-bottom: 1px solid #292524; }
+    tbody tr:nth-child(even) { background: #24201e; }
+    tbody tr:hover { background: #3a2f1c; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    th.num { text-align: right; }
+    #mensaje { text-align: center; padding: 2rem; color: #a8a29e; }
+    .error { color: #f87171; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Biblioteca Digital</h1>
+    <p>Catálogo de libros consultado en vivo desde Supabase</p>
+  </header>
+
+  <main>
+    <div id="contador"></div>
+    <p id="mensaje">Cargando libros...</p>
+    <table id="tabla-libros" hidden>
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>Título</th>
+          <th>Autor</th>
+          <th>Género</th>
+          <th class="num">Año</th>
+          <th class="num">Páginas</th>
+        </tr>
+      </thead>
+      <tbody id="lista-libros"></tbody>
+    </table>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Datos del proyecto (Project Settings > API Keys)
+    const URL_PROYECTO = 'https://sibreuqepyxvgpldraqy.supabase.co';
+    const CLAVE_PUBLICA = 'sb_publishable_ImS6wXR6tczkQd42yTwDdw_w9BMYUTl';
+
+    const cliente = supabase.createClient(URL_PROYECTO, CLAVE_PUBLICA);
+
+    const mensaje = document.getElementById('mensaje');
+    const tablaLibros = document.getElementById('tabla-libros');
+    const listaLibros = document.getElementById('lista-libros');
+    const contador = document.getElementById('contador');
+
+    function pintarLibros(libros) {
+      listaLibros.innerHTML = '';
+
+      libros.forEach(libro => {
+        const fila = document.createElement('tr');
+        const celdas = [
+          { texto: libro.id },
+          { texto: libro.titulo },
+          { texto: libro.autor },
+          { texto: libro.genero },
+          { texto: libro.anio, clase: 'num' },
+          { texto: libro.paginas, clase: 'num' }
+        ];
+
+        celdas.forEach(c => {
+          const td = document.createElement('td');
+          td.textContent = c.texto;
+          if (c.clase) td.className = c.clase;
+          fila.appendChild(td);
+        });
+
+        listaLibros.appendChild(fila);
+      });
+
+      contador.textContent = libros.length + ' libros en el catálogo';
+      mensaje.hidden = true;
+      tablaLibros.hidden = false;
+    }
+
+    async function obtenerLibros() {
+      const { data, error } = await cliente
+        .from('libros')
+        .select('*')
+        .order('id', { ascending: true });
+
+      if (error) {
+        mensaje.textContent = 'Error al consultar: ' + error.message;
+        mensaje.classList.add('error');
+        return;
+      }
+
+      pintarLibros(data);
+    }
+
+    obtenerLibros();
+  </script>
+</body>
+</html>
